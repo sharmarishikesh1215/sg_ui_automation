@@ -11,6 +11,15 @@ export class LoginPage {
   readonly submitButtonOnForgotPasswordPage: Locator;
   readonly countryDropdown: Locator;
   readonly IndiaOption: Locator;
+  readonly USAOption: Locator;
+  readonly UKOption: Locator;
+  readonly phoneNumberInput: Locator;
+  readonly errorMsgOtpField: Locator;
+  readonly continueButtonOnOtpPage: Locator;
+  readonly okButton: Locator;
+  readonly retryBtn: Locator;
+  readonly resetPasswordInput: Locator;
+  readonly reenterPasswordInput: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -26,6 +35,15 @@ export class LoginPage {
       "//div[@class='iti-arrow']"
     );
     this.IndiaOption = page.locator("(//span[text()='+91'])[1]");
+    this.USAOption = page.locator("(//span[text()='+1'])[1]");
+    this.UKOption = page.locator("(//span[text()='+44'])[1]");
+    this.phoneNumberInput = page.locator("//input[@id='phone_number']");
+    this.errorMsgOtpField = page.locator("((//div[@class='modal-body'])[1]/text())[2]");
+    this.continueButtonOnOtpPage = page.locator("//button[text()='Continue']");
+    this.okButton = page.locator("(//a[contains(text(), 'OK')])[1]");
+    this.retryBtn = page.locator("//span[@class='timer']");
+    this.resetPasswordInput = page.locator("//input[@id='password']");
+    this.reenterPasswordInput = page.locator("//input[@id='re_password']");
   }
 
   async goto() {
@@ -113,8 +131,48 @@ export class LoginPage {
     await this.submitButtonOnForgotPasswordPage.click();
   }
 
-  async countryDropdownOptions() {
+  async countryDropdownOptions(country: string) {
     await this.countryDropdown.click();
-    await this.IndiaOption.click();
+    if (country === "India") await this.IndiaOption.click();
+    else if (country === "USA") await this.USAOption.click();
+    else if (country === "UK") await this.UKOption.click();
+  }
+
+  async fillPhoneNumber(phoneNumber: string) {
+    await this.phoneNumberInput.fill(phoneNumber);
+  }
+
+  async clickContinueButtonOnOtpPage() {
+    await this.continueButtonOnOtpPage.click();
+  }
+
+  async clickOkOnSuccessPopup() {
+    await this.okButton.click();
+  }
+
+  async fillOtpField(otp: string) {
+    for (let i = 0; i < otp.length; i++) {
+      const digit = otp.charAt(i);
+      await this.page.fill(`//input[@id='codeBox${i + 1}']`, digit);
+    }
+  }
+
+  async clickRetryOtpButton() {
+
+  }
+
+  async fillNewPasswordField(newPassword: string) {
+    await this.resetPasswordInput.click();
+    // Use `type` instead of `fill` so keydown/keyup events fire and the
+    // client-side password checklist/validation updates per character.
+    await this.resetPasswordInput.fill("");
+    await this.resetPasswordInput.type(newPassword, { delay: 40 });
+    // blur the field to ensure any onblur validation runs
+    await this.resetPasswordInput.evaluate((el: HTMLInputElement) => el.blur());
+    // fill the re-enter field similarly to trigger its validations
+    await this.reenterPasswordInput.click();
+    await this.reenterPasswordInput.fill("");
+    await this.reenterPasswordInput.type(newPassword, { delay: 40 });
+    await this.reenterPasswordInput.evaluate((el: HTMLInputElement) => el.blur());
   }
 }
