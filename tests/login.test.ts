@@ -6,8 +6,8 @@ dotenv.config();
 
 test.describe("Login Tests", () => {
   let loginPage: LoginPage;
-  let username: string = process.env.USERNAME || "";
-  let password: string = process.env.PASSWORD || "";
+  let username: string = "rishikesh@frugaltestingin.com";
+  let password: string = "Frugal@123";
 
   test.beforeEach(async ({ page }) => {
     loginPage = new LoginPage(page);
@@ -79,10 +79,14 @@ test.describe("Login Tests", () => {
     await expect(page).toHaveURL(/user/);
   });
 
-  test("Verify error message when fields are cleared after entering data", async ({ page }) => {
+  test("Verify error message when fields are cleared after entering data", async ({
+    page,
+  }) => {
     await loginPage.clearedEmailAndPasswordFieldsError(username, password);
     await expect.soft(page.locator("//p[@id='empt_loginEmail']")).toBeVisible();
-    await expect.soft(page.locator("//p[@id='empt_loginPassword']")).toBeVisible();
+    await expect
+      .soft(page.locator("//p[@id='empt_loginPassword']"))
+      .toBeVisible();
   });
 });
 
@@ -99,14 +103,93 @@ test.describe("Forget Password Tests", () => {
     await expect(page).toHaveURL(/forget/);
   });
 
-  test("Verify error message is displayed when submitting empty phone number field", async ({ page }) => {
+  test("Verify error message is displayed when submitting empty phone number field", async ({
+    page,
+  }) => {
     await loginPage.clickSubmitButtonOnForgotPasswordPage();
-    await expect(page.locator("//label[text()='This field is required.']")).toBeVisible();
+    await expect(
+      page.locator("//label[text()='This field is required.']")
+    ).toBeVisible();
   });
 
   test("Verify country dropdown options are selectable", async ({ page }) => {
-    await loginPage.countryDropdownOptions();
+    await loginPage.countryDropdownOptions("India");
     await page.waitForTimeout(3000);
-    await expect(page.locator("//div[@class='selected-dial-code']")).toHaveText("+91");
+    await expect(page.locator("//div[@class='selected-dial-code']")).toHaveText(
+      "+91"
+    );
+    await loginPage.countryDropdownOptions("USA");
+    await page.waitForTimeout(3000);
+    await expect(page.locator("//div[@class='selected-dial-code']")).toHaveText(
+      "+1"
+    );
+    await loginPage.countryDropdownOptions("UK");
+    await page.waitForTimeout(3000);
+    await expect(page.locator("//div[@class='selected-dial-code']")).toHaveText(
+      "+44"
+    );
   });
-}); 
+
+  test("Verify submitting correct phone number proceeds to OTP page without any error", async ({
+    page,
+  }) => {
+    await loginPage.countryDropdownOptions("India");
+    await loginPage.fillPhoneNumber("8638985132");
+    await loginPage.clickSubmitButtonOnForgotPasswordPage();
+    await expect(page).toHaveURL(/signup\/verify/);
+  });
+
+  test("Verify otp field displays error message when submitted empty", async ({
+    page,
+  }) => {
+    await loginPage.countryDropdownOptions("India");
+    await loginPage.fillPhoneNumber("8638985132");
+    await loginPage.clickSubmitButtonOnForgotPasswordPage();
+    await loginPage.clickOkOnSuccessPopup();
+    await loginPage.clickContinueButtonOnOtpPage();
+    await expect(page.locator('html').getByRole('document')).toContainText('Verification code is invalid, please try again.');
+  });
+
+  test("Verify filling half otp field displays error message", async ({ page }) => {
+    await loginPage.countryDropdownOptions("India");
+    await loginPage.fillPhoneNumber("8638985132");
+    await loginPage.clickSubmitButtonOnForgotPasswordPage();
+    await loginPage.clickOkOnSuccessPopup();
+    await loginPage.fillOtpField("123");
+    await loginPage.clickContinueButtonOnOtpPage();
+    await expect(page.locator('html').getByRole('document')).toContainText('Verification code is invalid, please try again.');
+  });
+
+  test("Verify retry otp button functionality", async ({ page }) => {
+    await loginPage.countryDropdownOptions("India");
+    await loginPage.fillPhoneNumber("8638985132");
+    await loginPage.clickSubmitButtonOnForgotPasswordPage();
+    await loginPage.clickOkOnSuccessPopup();
+    await loginPage.clickRetryOtpButton();
+   });
+
+  test("Verify filling correct otp proceeds further", async ({ page }) => {
+    await loginPage.countryDropdownOptions("India");
+    await loginPage.fillPhoneNumber("8638985132");
+    await loginPage.clickSubmitButtonOnForgotPasswordPage();
+    await loginPage.clickOkOnSuccessPopup();
+    await loginPage.fillOtpField("1234");
+    await loginPage.clickContinueButtonOnOtpPage();
+    await expect(page).toHaveURL(/login\/forget\/reset/);
+  });
+
+  test("Verify password reset functionality with valid password combination", async ({ page }) => {
+    await loginPage.countryDropdownOptions("India");
+    await loginPage.fillPhoneNumber("8638985132");
+    await loginPage.clickSubmitButtonOnForgotPasswordPage();
+    await loginPage.clickOkOnSuccessPopup();
+    await loginPage.fillOtpField("1234");
+    await loginPage.clickContinueButtonOnOtpPage();
+    await loginPage.fillNewPasswordField("Frugal@123");
+    await expect.soft(page.locator("#firstLi")).toHaveAttribute("class", "complete");
+    await expect.soft(page.locator("#secondLi")).toHaveAttribute("class", "complete");
+    await expect.soft(page.locator("#thirdLi")).toHaveAttribute("class", "complete");
+    await expect.soft(page.locator("#fourthLi")).toHaveAttribute("class", "complete");
+    await expect.soft(page.locator("#fifthLi")).toHaveAttribute("class", "complete");
+  });
+});
